@@ -1,13 +1,9 @@
-variable "cloudwatch_log_group_name" {
-  type = string
-}
-
 variable "sns_topic_name" {
   type    = string
-  default = "cis-security-alarms"
+  default = "cis-security-events"
 }
 
-variable "alarm_email" {
+variable "notification_email" {
   type    = string
   default = null
 }
@@ -17,12 +13,7 @@ variable "existing_sns_topic_arn" {
   default = null
 }
 
-variable "metric_namespace" {
-  type    = string
-  default = "CISBenchmark"
-}
-
-variable "enabled_alarms" {
+variable "enabled_rules" {
   type    = map(bool)
   default = {}
 }

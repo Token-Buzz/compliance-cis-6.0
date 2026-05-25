@@ -1,9 +1,9 @@
 output "cloudwatch_log_group_name" {
-  value = aws_cloudwatch_log_group.this.name
+  value = try(aws_cloudwatch_log_group.this[0].name, null)
 }
 
 output "cloudwatch_log_group_arn" {
-  value = aws_cloudwatch_log_group.this.arn
+  value = try(aws_cloudwatch_log_group.this[0].arn, null)
 }
 
 output "kms_key_arn" {

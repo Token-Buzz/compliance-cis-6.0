@@ -66,9 +66,9 @@ Live status for the M12 epic: [Token-Buzz/website#130](https://github.com/Token-
 | --- | --- | --- | --- | --- |
 | 4.1 | CloudTrail enabled in all regions | L1 | TF-account | `modules/cloudtrail` (multi-region org trail) |
 | 4.2 | CloudTrail log file validation | L2 | TF-account | `modules/cloudtrail` (`enable_log_file_validation`) |
-| 4.3 | AWS Config enabled in all regions | L2 | TF-account | `modules/config` (per region) |
+| 4.3 | AWS Config enabled in all regions | L2 | **Compensating** | Config **not deployed** (cost). Covered by scheduled Prowler scan + `terraform plan` drift — see "Cost posture" |
 | 4.4 | Server access logging on CloudTrail S3 bucket | L1 | TF-account *(planned)* | Add access-log target to trail bucket — see "open facts" |
-| 4.5 | CloudTrail logs encrypted with KMS CMK | L2 | TF-account | `modules/cloudtrail` (dedicated CMK) |
+| 4.5 | CloudTrail logs encrypted with KMS CMK | L2 | **Accepted risk** | `modules/cloudtrail` uses free **SSE-S3 (AES256)** by default — encrypted at rest, not a CMK. Set `create_kms_key=true` for strict 4.5 (+$1/mo) |
 | 4.6 | Rotation enabled for customer symmetric CMKs | L2 | Split | Our CMKs → `modules/cloudtrail` (rotation on); app CMKs → SST |
 | 4.7 | VPC flow logging in all VPCs | L2 | Split | `modules/vpc-baseline` (default VPC, opt-in/cost); app VPCs → SST |
 | 4.8 | S3 object-level **write** logging | L2 | TF-account | `modules/cloudtrail` (write data events, all buckets) |
@@ -76,28 +76,33 @@ Live status for the M12 epic: [Token-Buzz/website#130](https://github.com/Token-
 
 ## Section 5 — Monitoring
 
-All 5.1–5.15 = CloudWatch Logs metric filter + alarm over the CloudTrail log group →
-`modules/monitoring-alarms`. 5.16 = Security Hub → `modules/security-hub`.
-**Dependency:** these only pass once the 4.1 trail is wired to CloudWatch Logs (it is).
+5.1–5.15 are delivered as **free EventBridge rules → SNS** (`modules/monitoring-events`)
+instead of paid CloudWatch metric-filter alarms (~$1.50/mo + Logs ingest).
+**Caveat:** Prowler checks 5.1–5.15 by looking for the *metric filters* specifically, so
+it will still report these as FAIL — EventBridge is a genuine compensating control (you are
+notified), not a checkbox pass. **Scope:** rules run in the home region (`us-east-1`), which
+receives all global-service events; non-home **network**-change events (5.10–5.14) are
+covered by the periodic Prowler scan instead. 5.16 (Security Hub) is dropped — Prowler is the
+CIS scanner. See "Cost posture".
 
 | ID | Title | Lvl | Owner | Implemented in |
 | --- | --- | --- | --- | --- |
-| 5.1 | Unauthorized API calls | L2 | TF-account | `modules/monitoring-alarms` |
-| 5.2 | Console sign-in without MFA | L1 | TF-account | `modules/monitoring-alarms` |
-| 5.3 | Usage of 'root' account | L1 | TF-account | `modules/monitoring-alarms` |
-| 5.4 | IAM policy changes | L1 | TF-account | `modules/monitoring-alarms` |
-| 5.5 | CloudTrail config changes | L1 | TF-account | `modules/monitoring-alarms` |
-| 5.6 | Console authentication failures | L2 | TF-account | `modules/monitoring-alarms` |
-| 5.7 | Disable / scheduled deletion of CMKs | L2 | TF-account | `modules/monitoring-alarms` |
-| 5.8 | S3 bucket policy changes | L1 | TF-account | `modules/monitoring-alarms` |
-| 5.9 | AWS Config config changes | L2 | TF-account | `modules/monitoring-alarms` |
-| 5.10 | Security group changes | L2 | TF-account | `modules/monitoring-alarms` |
-| 5.11 | NACL changes | L2 | TF-account | `modules/monitoring-alarms` |
-| 5.12 | Network gateway changes | L1 | TF-account | `modules/monitoring-alarms` |
-| 5.13 | Route table changes | L1 | TF-account | `modules/monitoring-alarms` |
-| 5.14 | VPC changes | L1 | TF-account | `modules/monitoring-alarms` |
-| 5.15 | AWS Organizations changes | L1 | TF-account | `modules/monitoring-alarms` |
-| 5.16 | AWS Security Hub enabled | L2 | TF-account | `modules/security-hub` (CIS standard subscription) |
+| 5.1 | Unauthorized API calls | L2 | Compensating | `modules/monitoring-events` (EventBridge→SNS) |
+| 5.2 | Console sign-in without MFA | L1 | Compensating | `modules/monitoring-events` (EventBridge→SNS) |
+| 5.3 | Usage of 'root' account | L1 | Compensating | `modules/monitoring-events` (EventBridge→SNS) |
+| 5.4 | IAM policy changes | L1 | Compensating | `modules/monitoring-events` (EventBridge→SNS) |
+| 5.5 | CloudTrail config changes | L1 | Compensating | `modules/monitoring-events` (EventBridge→SNS) |
+| 5.6 | Console authentication failures | L2 | Compensating | `modules/monitoring-events` (EventBridge→SNS) |
+| 5.7 | Disable / scheduled deletion of CMKs | L2 | Compensating | `modules/monitoring-events` (EventBridge→SNS) |
+| 5.8 | S3 bucket policy changes | L1 | Compensating | `modules/monitoring-events` (EventBridge→SNS) |
+| 5.9 | AWS Config config changes | L2 | Compensating | `modules/monitoring-events` (EventBridge→SNS) |
+| 5.10 | Security group changes | L2 | Compensating | `modules/monitoring-events` (EventBridge→SNS) |
+| 5.11 | NACL changes | L2 | Compensating | `modules/monitoring-events` (EventBridge→SNS) |
+| 5.12 | Network gateway changes | L1 | Compensating | `modules/monitoring-events` (EventBridge→SNS) |
+| 5.13 | Route table changes | L1 | Compensating | `modules/monitoring-events` (EventBridge→SNS) |
+| 5.14 | VPC changes | L1 | Compensating | `modules/monitoring-events` (EventBridge→SNS) |
+| 5.15 | AWS Organizations changes | L1 | Compensating | `modules/monitoring-events` (EventBridge→SNS) |
+| 5.16 | AWS Security Hub enabled | L2 | **Compensating** | Security Hub **not deployed** — Prowler is the CIS scanner (redundant). Module kept; set `enable_security_hub=true` to turn on (+cost) |
 
 ## Section 6 — Networking
 
@@ -116,10 +121,34 @@ All 5.1–5.15 = CloudWatch Logs metric filter + alarm over the CloudTrail log g
 
 | Owner | Count | Notes |
 | --- | ---: | --- |
-| TF-account (this repo) | ~28 | incl. 3 planned: 2.21, 3.1.3, 4.4 |
+| TF-account, deployed (free) | ~13 | 2.1, 2.2, 2.7, 2.8, 2.16, 2.19, 3.1.4 (account), 4.1, 4.2, 4.8, 6.1.1, 6.5 |
+| Compensating (Prowler / EventBridge) | ~17 | 4.3, 5.1–5.16 — paid AWS services swapped for free coverage |
+| Accepted risk (cost) | 1 | 4.5 (SSE-S3 not CMK) |
+| TF-account, planned/off | ~4 | 2.21, 3.1.3, 4.4, 4.9 (allowlist), + GuardDuty/flow-logs toggles |
 | SST-app (`website`) | ~10 | several **N/A** if the app is fully serverless |
 | Manual / process | ~12 | tracked in `docs/policies/` + evidence |
-| Split / TBD | ~5 | 2.14, 2.15, 3.1.4, 4.6, 4.7, 6.2 |
+| Split / TBD | ~5 | 2.14, 2.15, 4.6, 4.7, 6.2 |
+
+## Cost posture (target: < $1 / month)
+
+The full CIS detective stack (AWS Config + Security Hub + 15 CloudWatch alarms + a KMS CMK)
+has a fixed-cost floor well above $1/mo, so the deployed defaults trade strict checkbox
+compliance for free **compensating controls**. What is deployed by default:
+
+| Decision | Control(s) | Saves | Compensating control |
+| --- | --- | --- | --- |
+| AWS Config **off** (`enable_aws_config=false`) | 4.3 | ~$5–40/mo | Scheduled **Prowler** scan (all regions, all checks) + `terraform plan` drift in CI |
+| Security Hub **off** (`enable_security_hub=false`) | 5.16 | ~$1–5/mo | **Prowler** is the CIS scanner — same checks, on a schedule |
+| CloudTrail **SSE-S3** not CMK (`create_kms_key=false`) | 4.5 | $1/mo flat | Logs still encrypted at rest (AES256), versioned, TLS-only, public-access-blocked |
+| CloudTrail **no CW Logs** (`deliver_to_cloudwatch_logs=false`) | feeds 5.x | ingest $ | EventBridge reads the same events without paid log ingestion |
+| **EventBridge→SNS** not metric alarms | 5.1–5.15 | $1.50/mo flat | Free EventBridge rules notify SNS on the same events |
+
+**Always-on free guardrails (kept):** CloudTrail (4.1), Access Analyzer all regions (2.19),
+EBS default encryption all regions (6.1.1), default-SG lockdown (6.5), IAM password policy
+(2.7/2.8), account contacts (2.1/2.2), support role (2.16), account S3 BPA (3.1.4).
+**Off by default (cost):** GuardDuty, VPC flow logs. Estimated run cost: **~$0.10–0.30/mo**
+(CloudTrail S3 storage + a few requests). Each dropped control can be turned back on with its
+toggle. Formal accepted-risk register: [`docs/policies/accepted-risks.md`](docs/policies/accepted-risks.md).
 
 ## Open facts to confirm (these change ownership / applicability)
 

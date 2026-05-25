@@ -76,6 +76,21 @@ variable "security_contact" {
   default = null
 }
 
+# Off by default for cost. Compensating controls (Prowler scans + Terraform
+# drift detection) replace continuous AWS Config recording.
+variable "enable_aws_config" {
+  description = "Enable AWS Config recorders + delivery (bucket, IAM roles) in every active region."
+  type        = bool
+  default     = false
+}
+
+# Off by default for cost. Compensating controls cover the same CIS checks.
+variable "enable_security_hub" {
+  description = "Enable Security Hub in every active region."
+  type        = bool
+  default     = false
+}
+
 variable "enable_guardduty" {
   description = "Enable GuardDuty in every active region."
   type        = bool

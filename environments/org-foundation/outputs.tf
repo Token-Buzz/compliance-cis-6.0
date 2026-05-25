@@ -8,14 +8,14 @@ output "cloudtrail_kms_key_arn" {
   value       = module.cloudtrail.kms_key_arn
 }
 
-output "alarms_sns_topic_arn" {
-  description = "SNS topic ARN for CIS metric-filter alarms."
-  value       = module.monitoring_alarms.sns_topic_arn
+output "security_events_sns_topic_arn" {
+  description = "SNS topic ARN for the EventBridge CIS security-event rules."
+  value       = module.monitoring_events.sns_topic_arn
 }
 
 output "config_bucket" {
-  description = "Name of the central AWS Config delivery bucket."
-  value       = aws_s3_bucket.config.id
+  description = "Name of the central AWS Config delivery bucket (null when Config is disabled)."
+  value       = try(aws_s3_bucket.config[0].id, null)
 }
 
 output "home_analyzer_arn" {

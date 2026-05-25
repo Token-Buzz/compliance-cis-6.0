@@ -8,8 +8,8 @@ locals {
   account_id  = data.aws_caller_identity.current.account_id
   partition   = data.aws_partition.current.partition
   region      = data.aws_region.current.name
-  kms_key_arn = coalesce(var.kms_key_arn, try(aws_kms_key.this[0].arn, null))
-  create_kms  = var.kms_key_arn == null
+  kms_key_arn = var.create_kms_key ? aws_kms_key.this[0].arn : var.kms_key_arn
+  create_kms  = var.create_kms_key
   trail_arn   = "arn:${local.partition}:cloudtrail:${local.region}:${local.account_id}:trail/${var.trail_name}"
 }
 
@@ -121,10 +121,10 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "this" {
 
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm     = "aws:kms"
+      sse_algorithm     = local.kms_key_arn != null ? "aws:kms" : "AES256"
       kms_master_key_id = local.kms_key_arn
     }
-    bucket_key_enabled = true
+    bucket_key_enabled = local.kms_key_arn != null
   }
 }
 
@@ -251,6 +251,8 @@ resource "aws_s3_bucket_policy" "this" {
 }
 
 resource "aws_cloudwatch_log_group" "this" {
+  count = var.deliver_to_cloudwatch_logs ? 1 : 0
+
   name              = "/aws/cloudtrail/${var.trail_name}"
   retention_in_days = var.cloudwatch_logs_retention_days
   kms_key_id        = local.create_kms ? local.kms_key_arn : null
@@ -259,6 +261,8 @@ resource "aws_cloudwatch_log_group" "this" {
 }
 
 data "aws_iam_policy_document" "cwl_assume" {
+  count = var.deliver_to_cloudwatch_logs ? 1 : 0
+
   statement {
     effect  = "Allow"
     actions = ["sts:AssumeRole"]
@@ -271,27 +275,33 @@ data "aws_iam_policy_document" "cwl_assume" {
 }
 
 resource "aws_iam_role" "cwl" {
+  count = var.deliver_to_cloudwatch_logs ? 1 : 0
+
   name               = "${var.trail_name}-cloudtrail-cwl"
-  assume_role_policy = data.aws_iam_policy_document.cwl_assume.json
+  assume_role_policy = data.aws_iam_policy_document.cwl_assume[0].json
 
   tags = var.tags
 }
 
 data "aws_iam_policy_document" "cwl" {
+  count = var.deliver_to_cloudwatch_logs ? 1 : 0
+
   statement {
     effect = "Allow"
     actions = [
       "logs:CreateLogStream",
       "logs:PutLogEvents",
     ]
-    resources = ["${aws_cloudwatch_log_group.this.arn}:*"]
+    resources = ["${aws_cloudwatch_log_group.this[0].arn}:*"]
   }
 }
 
 resource "aws_iam_role_policy" "cwl" {
+  count = var.deliver_to_cloudwatch_logs ? 1 : 0
+
   name   = "${var.trail_name}-cloudtrail-cwl"
-  role   = aws_iam_role.cwl.id
-  policy = data.aws_iam_policy_document.cwl.json
+  role   = aws_iam_role.cwl[0].id
+  policy = data.aws_iam_policy_document.cwl[0].json
 }
 
 resource "aws_cloudtrail" "this" {
@@ -303,8 +313,8 @@ resource "aws_cloudtrail" "this" {
   enable_logging                = true
   kms_key_id                    = local.kms_key_arn
   is_organization_trail         = var.is_organization_trail
-  cloud_watch_logs_group_arn    = "${aws_cloudwatch_log_group.this.arn}:*"
-  cloud_watch_logs_role_arn     = aws_iam_role.cwl.arn
+  cloud_watch_logs_group_arn    = var.deliver_to_cloudwatch_logs ? "${aws_cloudwatch_log_group.this[0].arn}:*" : null
+  cloud_watch_logs_role_arn     = var.deliver_to_cloudwatch_logs ? aws_iam_role.cwl[0].arn : null
 
   advanced_event_selector {
     name = "Management events"

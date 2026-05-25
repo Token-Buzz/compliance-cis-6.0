@@ -17,15 +17,18 @@ variable "name_prefix" {
 }
 
 variable "config_s3_bucket_name" {
-  description = "Central AWS Config delivery bucket (created once in the root)."
+  description = "Central AWS Config delivery bucket (created once in the root). Required only when enable_config = true; omit (null) when Config is disabled."
   type        = string
+  default     = null
 }
 
 # The SHARED global Config recorder role, created once in the root and passed
 # to every region so each region does not create its own IAM role (IAM is
 # global and per-region roles would collide on name).
+# Required only when enable_config = true; omit (null) when Config is disabled.
 variable "config_iam_role_arn" {
-  type = string
+  type    = string
+  default = null
 }
 
 # Required only when is_home_region: the role assumed by the org aggregator.
@@ -36,12 +39,12 @@ variable "config_aggregator_role_arn" {
 
 variable "enable_config" {
   type    = bool
-  default = true
+  default = false
 }
 
 variable "enable_security_hub" {
   type    = bool
-  default = true
+  default = false
 }
 
 variable "enable_access_analyzer" {

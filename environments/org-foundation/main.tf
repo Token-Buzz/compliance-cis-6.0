@@ -22,17 +22,21 @@ module "cloudtrail" {
   log_bucket_name       = var.trail_log_bucket_name
   is_organization_trail = var.is_organization_trail
 
+  # Cost-minimized: free SSE-S3 encryption (no KMS key) and no CloudWatch Logs
+  # delivery. CIS monitoring is handled by the EventBridge rules below.
+  create_kms_key             = false
+  deliver_to_cloudwatch_logs = false
+
   s3_data_event_write_all_buckets = true
   s3_read_event_bucket_arns       = var.s3_read_event_bucket_arns
 
   tags = var.tags
 }
 
-module "monitoring_alarms" {
-  source = "../../modules/monitoring-alarms"
+module "monitoring_events" {
+  source = "../../modules/monitoring-events"
 
-  cloudwatch_log_group_name = module.cloudtrail.cloudwatch_log_group_name
-  alarm_email               = var.alarm_email
+  notification_email = var.alarm_email
 
   tags = var.tags
 }

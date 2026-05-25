@@ -56,3 +56,13 @@ module "vpc_baseline" {
 
   tags = var.tags
 }
+
+# When Config is enabled the caller MUST supply the shared delivery bucket and
+# recorder role; both are global resources created once in the root. They are
+# optional (null) only because Config can be disabled entirely.
+check "config_inputs" {
+  assert {
+    condition     = !var.enable_config || (var.config_s3_bucket_name != null && var.config_iam_role_arn != null)
+    error_message = "enable_config = true requires both config_s3_bucket_name and config_iam_role_arn to be set."
+  }
+}

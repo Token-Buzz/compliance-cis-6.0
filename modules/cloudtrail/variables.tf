@@ -16,6 +16,16 @@ variable "kms_key_arn" {
   default = null
 }
 
+variable "create_kms_key" {
+  type    = bool
+  default = false
+}
+
+variable "deliver_to_cloudwatch_logs" {
+  type    = bool
+  default = true
+}
+
 variable "cloudwatch_logs_retention_days" {
   type    = number
   default = 365

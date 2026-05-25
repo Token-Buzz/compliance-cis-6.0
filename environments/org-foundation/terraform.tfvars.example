@@ -20,6 +20,15 @@ s3_read_event_bucket_arns = [
   # "arn:aws:s3:::my-sensitive-bucket",
 ]
 
+# AWS Config and Security Hub are OFF by default to minimize cost. Their CIS
+# coverage is provided instead by compensating controls (scheduled Prowler scans
+# + Terraform drift detection), so the continuous-recording bill is avoided.
+# Set either to true to create that service's resources in every active region.
+# Note: CloudTrail uses free SSE-S3 encryption (no KMS key) with no CloudWatch
+# Logs delivery; CIS monitoring runs via the EventBridge rules in monitoring-events.
+enable_aws_config   = false
+enable_security_hub = false
+
 # Optional — turn on GuardDuty in every active region (off by default for cost).
 enable_guardduty = false
 

@@ -1,16 +1,21 @@
 # Central AWS Config delivery bucket, created once in the root (home region)
-# and shared by every regional Config delivery channel.
+# and shared by every regional Config delivery channel. Created only when AWS
+# Config is enabled (off by default for cost).
 
 data "aws_caller_identity" "current" {}
 
 resource "aws_s3_bucket" "config" {
+  count = var.enable_aws_config ? 1 : 0
+
   bucket = var.config_log_bucket_name
 
   tags = var.tags
 }
 
 resource "aws_s3_bucket_versioning" "config" {
-  bucket = aws_s3_bucket.config.id
+  count = var.enable_aws_config ? 1 : 0
+
+  bucket = aws_s3_bucket.config[0].id
 
   versioning_configuration {
     status = "Enabled"
@@ -18,7 +23,9 @@ resource "aws_s3_bucket_versioning" "config" {
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "config" {
-  bucket = aws_s3_bucket.config.id
+  count = var.enable_aws_config ? 1 : 0
+
+  bucket = aws_s3_bucket.config[0].id
 
   rule {
     apply_server_side_encryption_by_default {
@@ -28,7 +35,9 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "config" {
 }
 
 resource "aws_s3_bucket_public_access_block" "config" {
-  bucket = aws_s3_bucket.config.id
+  count = var.enable_aws_config ? 1 : 0
+
+  bucket = aws_s3_bucket.config[0].id
 
   block_public_acls       = true
   block_public_policy     = true
@@ -37,7 +46,9 @@ resource "aws_s3_bucket_public_access_block" "config" {
 }
 
 resource "aws_s3_bucket_lifecycle_configuration" "config" {
-  bucket = aws_s3_bucket.config.id
+  count = var.enable_aws_config ? 1 : 0
+
+  bucket = aws_s3_bucket.config[0].id
 
   rule {
     id     = "expire-config-objects"
@@ -52,6 +63,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "config" {
 }
 
 data "aws_iam_policy_document" "config_bucket" {
+  count = var.enable_aws_config ? 1 : 0
+
   # AWS Config needs to read the bucket ACL before delivering.
   statement {
     sid     = "AWSConfigBucketPermissionsCheck"
@@ -63,7 +76,7 @@ data "aws_iam_policy_document" "config_bucket" {
       identifiers = ["config.amazonaws.com"]
     }
 
-    resources = [aws_s3_bucket.config.arn]
+    resources = [aws_s3_bucket.config[0].arn]
   }
 
   # AWS Config writes snapshots/history under the account prefix and must grant
@@ -78,7 +91,7 @@ data "aws_iam_policy_document" "config_bucket" {
       identifiers = ["config.amazonaws.com"]
     }
 
-    resources = ["${aws_s3_bucket.config.arn}/AWSLogs/${data.aws_caller_identity.current.account_id}/Config/*"]
+    resources = ["${aws_s3_bucket.config[0].arn}/AWSLogs/${data.aws_caller_identity.current.account_id}/Config/*"]
 
     condition {
       test     = "StringEquals"
@@ -99,8 +112,8 @@ data "aws_iam_policy_document" "config_bucket" {
     }
 
     resources = [
-      aws_s3_bucket.config.arn,
-      "${aws_s3_bucket.config.arn}/*",
+      aws_s3_bucket.config[0].arn,
+      "${aws_s3_bucket.config[0].arn}/*",
     ]
 
     condition {
@@ -112,6 +125,8 @@ data "aws_iam_policy_document" "config_bucket" {
 }
 
 resource "aws_s3_bucket_policy" "config" {
-  bucket = aws_s3_bucket.config.id
-  policy = data.aws_iam_policy_document.config_bucket.json
+  count = var.enable_aws_config ? 1 : 0
+
+  bucket = aws_s3_bucket.config[0].id
+  policy = data.aws_iam_policy_document.config_bucket[0].json
 }

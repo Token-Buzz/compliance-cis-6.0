@@ -36,9 +36,16 @@ Out of scope: OS/host CIS baselines (the stack is serverless — no long-lived h
 
 ## Terraform enforcement
 
-This repo enforces the **account/org-wide** CIS guardrails (CloudTrail, AWS Config, Security
-Hub, IAM Access Analyzer, the CloudWatch monitoring alarms, IAM password policy / contacts /
-support role, account S3 Block Public Access, EBS default encryption, default-SG lockdown).
+This repo enforces the **account/org-wide** CIS guardrails. To stay under a **< $1/month**
+budget, the default deployment keeps the **free** controls (CloudTrail, IAM Access Analyzer,
+EBS default encryption, default-SG lockdown, IAM password policy / contacts / support role,
+account S3 Block Public Access) and swaps the paid ones for **compensating controls**: AWS
+Config and Security Hub are **off by default** (covered by the scheduled Prowler scan +
+`terraform plan` drift), CloudTrail uses free **SSE-S3** (not a KMS CMK), and the CIS 5.x
+monitoring uses free **EventBridge → SNS** rules instead of paid CloudWatch alarms. Each can
+be re-enabled with its toggle. See [`docs/policies/accepted-risks.md`](docs/policies/accepted-risks.md)
+and the "Cost posture" section of `controls-matrix.md`.
+
 **Resource-scoped** controls (per-bucket S3 settings, CloudFront TLS, DynamoDB encryption)
 stay with the resources SST owns in `Token-Buzz/website`. `controls-matrix.md` is the
 authoritative per-control owner map.
