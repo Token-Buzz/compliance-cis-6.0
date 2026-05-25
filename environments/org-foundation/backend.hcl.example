@@ -1,0 +1,15 @@
+# Example remote-state backend configuration for the org-foundation root.
+#
+# Copy this file to backend.hcl (kept out of version control) and fill in the
+# values produced by the global/backend-bootstrap root, then run:
+#
+#   terraform init -backend-config=backend.hcl
+#
+# bucket / dynamodb_table come from global/backend-bootstrap outputs
+# (state_bucket, lock_table). region is the backend region (us-east-1 here).
+
+bucket         = "REPLACE-WITH-state_bucket-FROM-backend-bootstrap"
+key            = "org-foundation/terraform.tfstate"
+region         = "us-east-1"
+dynamodb_table = "terraform-locks"
+encrypt        = true

@@ -1,0 +1,2 @@
+# Real backend config (copied from backend.hcl.example). Keep local-only.
+backend.hcl

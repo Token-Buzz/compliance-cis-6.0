@@ -24,11 +24,39 @@ Out of scope: OS/host CIS baselines (the stack is serverless — no long-lived h
 
 | Path | Purpose |
 | --- | --- |
-| `controls-matrix.md` | Each CIS / CI-CD control → implementing phase / PR / IaC file |
+| `controls-matrix.md` | Every CIS v6.0.0 control → owner (TF here / SST / manual) + IaC file |
+| `modules/` | Reusable Terraform modules enforcing the account/org CIS guardrails |
+| `environments/org-foundation/` | Root that wires the modules across all active regions |
+| `global/backend-bootstrap/` | One-time S3 + DynamoDB remote-state backend bootstrap |
 | `docs/policies/` | Security policy set (access control, change mgmt, logging, IR, vendor) |
 | `baselines/<date>/` | Dated Prowler CIS-AWS baseline runs (HTML + JSON) + config |
 | `evidence/<date>/` | Point-in-time evidence: scan exports, SBOMs, attestations |
+| `.github/workflows/terraform.yml` | `fmt` + `validate` + lint gate on PRs |
 | `.github/workflows/cis-scan.yml` | Scheduled Prowler re-scan + drift alerting (Phase 9) |
+
+## Terraform enforcement
+
+This repo enforces the **account/org-wide** CIS guardrails (CloudTrail, AWS Config, Security
+Hub, IAM Access Analyzer, the CloudWatch monitoring alarms, IAM password policy / contacts /
+support role, account S3 Block Public Access, EBS default encryption, default-SG lockdown).
+**Resource-scoped** controls (per-bucket S3 settings, CloudFront TLS, DynamoDB encryption)
+stay with the resources SST owns in `Token-Buzz/website`. `controls-matrix.md` is the
+authoritative per-control owner map.
+
+```bash
+# 1. one-time: create the remote-state backend (uses local state)
+cd global/backend-bootstrap && terraform init && terraform apply   # CONFIRM FIRST
+
+# 2. the guardrails (run from the Org management / delegated-admin account)
+cd environments/org-foundation
+terraform init -backend-config=backend.hcl
+cp terraform.tfvars.example terraform.tfvars   # fill required values; never commit it
+terraform plan -var-file=terraform.tfvars      # review with the user before any apply
+```
+
+> Applied from the AWS Organization **management or delegated-admin** account (org CloudTrail,
+> ORGANIZATION-type Access Analyzer, Config aggregator). Home region is `us-east-1`. S3 read
+> data-event logging (CIS 4.9) is scoped to `s3_read_event_bucket_arns` to cap cost.
 
 ## Benchmark tool
 

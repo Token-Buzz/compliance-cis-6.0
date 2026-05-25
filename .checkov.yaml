@@ -1,0 +1,18 @@
+directory:
+  - .
+
+framework:
+  - terraform
+
+quiet: true
+compact: true
+
+# Bootstrap is intentionally minimal (it holds local state and predates the
+# guardrails it helps stand up), and .terraform holds vendored provider code.
+skip-path:
+  - .terraform
+  - global/backend-bootstrap
+
+# Document accepted risks here with a justification comment. Example:
+# skip-check:
+#   - CKV_AWS_18   # access logging on the state bucket tracked separately in <issue>

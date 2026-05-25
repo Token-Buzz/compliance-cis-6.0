@@ -1,0 +1,57 @@
+# Example variables for the org-foundation root.
+#
+# Copy this file to a real, gitignored tfvars (e.g. prod.tfvars) and replace the
+# placeholders with this account's real values:
+#
+#   terraform plan -var-file=prod.tfvars
+#
+# The two bucket names are REQUIRED (no default) and must be globally unique.
+
+# REQUIRED — globally-unique S3 bucket names. Suffix with the account id to keep
+# them unique (account 421219980711 shown here as an example).
+trail_log_bucket_name  = "cis-org-cloudtrail-logs-421219980711"
+config_log_bucket_name = "cis-org-config-logs-421219980711"
+
+# Optional — email subscribed to the CIS alarm SNS topic.
+alarm_email = "security-alerts@example.com"
+
+# Optional — object-level read data events for specific buckets.
+s3_read_event_bucket_arns = [
+  # "arn:aws:s3:::my-sensitive-bucket",
+]
+
+# Optional — turn on GuardDuty in every active region (off by default for cost).
+enable_guardduty = false
+
+# Optional — strip all rules from the default security group in every region.
+restrict_default_security_group = true
+
+# CIS 2.1 — primary account contact.
+primary_contact = {
+  full_name      = "Example Org Security"
+  address_line_1 = "123 Example Street"
+  city           = "Seattle"
+  country_code   = "US"
+  postal_code    = "98101"
+  phone_number   = "+1-206-555-0100"
+  # Optional fields:
+  # address_line_2     = ""
+  # state_or_region    = "WA"
+  # company_name       = "Example, Inc."
+  # website_url        = "https://example.com"
+}
+
+# CIS 2.2 — SECURITY alternate contact.
+security_contact = {
+  name          = "Security Operations"
+  title         = "Security Team"
+  email_address = "security@example.com"
+  phone_number  = "+1-206-555-0101"
+}
+
+# Tags applied to every resource.
+tags = {
+  ManagedBy   = "terraform"
+  Project     = "cis-aws-foundations-v6"
+  Environment = "org-foundation"
+}
