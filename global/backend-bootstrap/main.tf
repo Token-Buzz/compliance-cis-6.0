@@ -10,7 +10,7 @@
 #       bucket         = "<state_bucket_name>"
 #       key            = "<root>/terraform.tfstate"
 #       region         = "<region>"
-#       dynamodb_table = "<lock_table_name>"
+#       use_lockfile   = true
 #       encrypt        = true
 #     }
 #   }
@@ -106,20 +106,4 @@ resource "aws_s3_bucket_policy" "state" {
   # The public access block must exist first so attaching a bucket policy
   # cannot transiently expose the bucket.
   depends_on = [aws_s3_bucket_public_access_block.state]
-}
-
-# ---------------------------------------------------------------------------
-# DynamoDB table for state locking
-# ---------------------------------------------------------------------------
-resource "aws_dynamodb_table" "locks" {
-  name         = var.lock_table_name
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "LockID"
-
-  attribute {
-    name = "LockID"
-    type = "S"
-  }
-
-  tags = var.tags
 }

@@ -89,9 +89,9 @@ Two workflows, split by whether they touch the cloud:
 **Required repo settings** (Settings → Secrets and variables → Actions):
 - Secret: `AWS_ROLE_ARN` — the pre-existing IAM role to assume. **Its trust policy must allow
   `token.actions.githubusercontent.com` for `Token-Buzz/compliance-cis-6.0`** or OIDC auth fails.
-- Variables: `TF_STATE_BUCKET`, `TF_LOCK_TABLE` (from `global/backend-bootstrap` outputs),
+- Variables: `TF_STATE_BUCKET` (the `state_bucket` output from `global/backend-bootstrap`),
   `TRAIL_LOG_BUCKET_NAME`, `CONFIG_LOG_BUCKET_NAME` (the two required root vars, passed as
-  `TF_VAR_*`).
+  `TF_VAR_*`). State locking is S3-native (`use_lockfile`), so no lock-table variable is needed.
 
 ## GitHub tooling
 

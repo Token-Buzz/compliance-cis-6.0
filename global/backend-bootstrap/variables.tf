@@ -10,12 +10,6 @@ variable "state_bucket_name" {
   # No default: bucket names are global and account-specific; force an explicit value.
 }
 
-variable "lock_table_name" {
-  description = "Name of the DynamoDB table used for Terraform state locking."
-  type        = string
-  default     = "terraform-locks"
-}
-
 variable "tags" {
   description = "Tags applied to all bootstrap resources."
   type        = map(string)
