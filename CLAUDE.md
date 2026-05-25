@@ -74,12 +74,24 @@ secrets manager data source), never to soften the failure.
 
 ## CI/CD
 
-<!-- FILL IN with the real workflow names and triggers. Typical shape: -->
+Two workflows, split by whether they touch the cloud:
 
-- Open / update a PR → `fmt -check` + `validate` + `tflint`/`checkov` + `terraform plan`, plan posted to the PR.
-- Merge to `main` → `terraform apply` for the affected environment(s).
-- Auth to the cloud via OIDC (no long-lived keys in CI) — `<FILL IN: role ARN / WIF provider>`.
-- CI gates run before any cloud credentials are configured where possible, so lint/format failures block fast.
+- **`.github/workflows/terraform.yml`** — credential-free gate. On every PR and on push to
+  `main`/`claude/**`: `fmt -check` + `validate` (`-backend=false`) + `tflint`/`checkov`
+  (soft-fail). `permissions: contents: read` only — no cloud creds, so lint/format failures
+  block fast without ever exposing access.
+- **`.github/workflows/terraform-deploy.yml`** — authenticated. Keyless via **GitHub OIDC**
+  (`id-token: write`) assuming the role in the **`AWS_ROLE_ARN`** secret. On PR → `terraform
+  plan`, posted as a collapsed PR comment. On merge to `main` → `terraform apply -auto-approve`
+  (no manual gate — chosen posture). Applies are serialized via a `concurrency` group and
+  never cancelled mid-run.
+
+**Required repo settings** (Settings → Secrets and variables → Actions):
+- Secret: `AWS_ROLE_ARN` — the pre-existing IAM role to assume. **Its trust policy must allow
+  `token.actions.githubusercontent.com` for `Token-Buzz/compliance-cis-6.0`** or OIDC auth fails.
+- Variables: `TF_STATE_BUCKET`, `TF_LOCK_TABLE` (from `global/backend-bootstrap` outputs),
+  `TRAIL_LOG_BUCKET_NAME`, `CONFIG_LOG_BUCKET_NAME` (the two required root vars, passed as
+  `TF_VAR_*`).
 
 ## GitHub tooling
 
