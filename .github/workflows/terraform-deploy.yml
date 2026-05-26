@@ -1,0 +1,145 @@
+# Authenticated counterpart to terraform.yml (the credential-free fmt/validate/
+# lint gate). This workflow touches the real AWS backend: it runs `terraform
+# plan` on pull requests and `terraform apply` on merge to main.
+#
+# Auth is keyless: GitHub OIDC (id-token: write) assumes the IAM role named in
+# the AWS_ROLE_ARN secret — no long-lived access keys live in CI. That role's
+# trust policy must permit token.actions.githubusercontent.com to assume it for
+# THIS repository (sub / aud conditions scoped to the repo).
+name: Terraform Deploy
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# id-token: write enables OIDC role assumption; pull-requests: write lets the
+# plan job post its output back onto the PR.
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: write
+
+# Serialize applies against the shared org-foundation state; never cancel an
+# in-flight apply (cancel-in-progress: false) — interrupting apply can leave
+# state and infrastructure out of sync.
+concurrency:
+  group: terraform-org-foundation
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-1
+  TF_ROOT: environments/org-foundation
+  # Required root variables (no defaults). Non-secret; set as repo Variables.
+  TF_VAR_trail_log_bucket_name: ${{ vars.TRAIL_LOG_BUCKET_NAME }}
+  TF_VAR_config_log_bucket_name: ${{ vars.CONFIG_LOG_BUCKET_NAME }}
+
+jobs:
+  plan:
+    name: terraform plan
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: gha-terraform-plan
+
+      - name: Setup Terraform
+        # TODO: pin to SHA
+        # terraform_wrapper left at its default (true) so step stdout is
+        # captured into steps.<id>.outputs for the PR-comment step below.
+        uses: hashicorp/setup-terraform@v3
+
+      # bucket comes from a repo Variable; key/region/encrypt/use_lockfile are
+      # fixed per backend.hcl.example.
+      - name: terraform init
+        working-directory: ${{ env.TF_ROOT }}
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
+            -backend-config="use_lockfile=true" \
+            -backend-config="key=org-foundation/terraform.tfstate" \
+            -backend-config="region=${{ env.AWS_REGION }}" \
+            -backend-config="encrypt=true"
+
+      # continue-on-error so a failed plan still reaches the comment step; the
+      # final step re-fails the check based on plan outcome.
+      - name: terraform plan
+        id: plan
+        working-directory: ${{ env.TF_ROOT }}
+        continue-on-error: true
+        run: terraform plan -no-color -input=false
+
+      - name: Comment plan on PR
+        uses: actions/github-script@v7
+        env:
+          PLAN: ${{ steps.plan.outputs.stdout }}
+        with:
+          script: |
+            // Keep under GitHub's ~65k comment limit: keep the tail, where the
+            // plan summary / errors are.
+            let plan = process.env.PLAN || '';
+            const max = 60000;
+            if (plan.length > max) {
+              plan = '... (truncated to last 60000 chars) ...\n' + plan.slice(-max);
+            }
+            const outcome = '${{ steps.plan.outputs.exitcode }}' === '0' ? 'success' : 'failure';
+            const body = [
+              `### Terraform Plan: \`${outcome}\` (exit code \`${{ steps.plan.outputs.exitcode }}\`)`,
+              '',
+              '<details><summary>Show plan</summary>',
+              '',
+              '```terraform',
+              plan,
+              '```',
+              '',
+              '</details>',
+            ].join('\n');
+            await github.rest.issues.createComment({
+              ...context.repo,
+              issue_number: context.issue.number,
+              body,
+            });
+
+      - name: Fail if plan failed
+        if: steps.plan.outcome == 'failure'
+        run: exit 1
+
+  apply:
+    name: terraform apply
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: gha-terraform-apply
+
+      - name: Setup Terraform
+        # TODO: pin to SHA
+        uses: hashicorp/setup-terraform@v3
+
+      - name: terraform init
+        working-directory: ${{ env.TF_ROOT }}
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
+            -backend-config="use_lockfile=true" \
+            -backend-config="key=org-foundation/terraform.tfstate" \
+            -backend-config="region=${{ env.AWS_REGION }}" \
+            -backend-config="encrypt=true"
+
+      - name: terraform apply
+        working-directory: ${{ env.TF_ROOT }}
+        run: terraform apply -auto-approve -input=false -no-color

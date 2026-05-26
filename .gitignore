@@ -1,0 +1,27 @@
+# Terraform working dirs and provider cache
+.terraform/
+
+# State files — may contain secrets; never commit
+*.tfstate
+*.tfstate.*
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Variable files (may contain secrets). Example templates are kept.
+*.tfvars
+!*.tfvars.example
+
+# Local backend configs. Example templates are kept.
+*.backend.hcl
+!*.backend.hcl.example
+
+# Override files are for local-only experimentation
+override.tf
+override.tf.json
+
+# NOTE: .terraform.lock.hcl is committed for ROOT modules (environments/*, global/*)
+# to pin provider versions. Reusable child modules under modules/ do not install
+# providers themselves, so their lock files are local-only artifacts.
+modules/*/.terraform.lock.hcl

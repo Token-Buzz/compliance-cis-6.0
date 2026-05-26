@@ -1,0 +1,104 @@
+name: Terraform
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - "claude/**"
+
+# Minimal permissions: this gate only reads the repo. It runs no plan/apply and
+# requests no cloud credentials. A separate, authenticated workflow (OIDC role
+# assumption -> `terraform plan`) would handle cloud-touching steps; keeping it
+# out of this job means lint/format/validate failures block fast without ever
+# exposing credentials.
+permissions:
+  contents: read
+
+jobs:
+  fmt:
+    name: terraform fmt -check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        # TODO: pin to SHA
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: terraform fmt -recursive -check
+        run: terraform fmt -recursive -check
+
+  validate:
+    name: terraform validate (${{ matrix.root }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        root:
+          - environments/org-foundation
+          - global/backend-bootstrap
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        # TODO: pin to SHA
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      # -backend=false: validate syntax/internal consistency only; never reaches
+      # out to the real S3 backend and needs no cloud credentials here.
+      - name: terraform init (no backend)
+        run: terraform init -backend=false
+        working-directory: ${{ matrix.root }}
+
+      - name: terraform validate
+        run: terraform validate
+        working-directory: ${{ matrix.root }}
+
+  lint:
+    name: tflint + checkov
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # tflint: soft-failed at the setup/run boundary so a missing or
+      # not-yet-installed tool never breaks the gate, while real findings are
+      # still printed to the job log for reviewers.
+      - name: Setup tflint
+        # TODO: pin to SHA
+        uses: terraform-linters/setup-tflint@v4
+        continue-on-error: true
+
+      - name: tflint
+        continue-on-error: true
+        run: |
+          if command -v tflint >/dev/null 2>&1; then
+            tflint --init
+            tflint --recursive
+          else
+            echo "tflint not available; skipping."
+          fi
+
+      # checkov: soft-fail (--soft-fail) so policy findings are surfaced in the
+      # log without failing the build; tighten to a hard fail once the baseline
+      # is clean.
+      - name: Setup checkov
+        # TODO: pin to SHA
+        uses: bridgecrewio/checkov-action@v12
+        continue-on-error: true
+        with:
+          directory: .
+          config_file: .checkov.yaml
+          soft_fail: true
+
+  # NOTE: No `terraform plan`/`apply` runs in this workflow — there are no cloud
+  # credentials in this gate by design. A separate authenticated workflow would
+  # assume an AWS role via OIDC (permissions: id-token: write) and run
+  # `terraform plan` against the real backend, posting the plan to the PR.
