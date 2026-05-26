@@ -31,6 +31,7 @@ module "regional_us_east_1" {
 
   enable_guardduty                = var.enable_guardduty
   restrict_default_security_group = var.restrict_default_security_group
+  analyzer_type                   = var.analyzer_type
   enable_ebs_default_encryption   = true
 
   tags = var.tags
@@ -55,6 +56,7 @@ module "regional_us_east_2" {
 
   enable_guardduty                = var.enable_guardduty
   restrict_default_security_group = var.restrict_default_security_group
+  analyzer_type                   = var.analyzer_type
   enable_ebs_default_encryption   = true
 
   tags = var.tags
@@ -79,6 +81,7 @@ module "regional_us_west_1" {
 
   enable_guardduty                = var.enable_guardduty
   restrict_default_security_group = var.restrict_default_security_group
+  analyzer_type                   = var.analyzer_type
   enable_ebs_default_encryption   = true
 
   tags = var.tags
@@ -103,6 +106,7 @@ module "regional_us_west_2" {
 
   enable_guardduty                = var.enable_guardduty
   restrict_default_security_group = var.restrict_default_security_group
+  analyzer_type                   = var.analyzer_type
   enable_ebs_default_encryption   = true
 
   tags = var.tags
@@ -127,6 +131,7 @@ module "regional_ca_central_1" {
 
   enable_guardduty                = var.enable_guardduty
   restrict_default_security_group = var.restrict_default_security_group
+  analyzer_type                   = var.analyzer_type
   enable_ebs_default_encryption   = true
 
   tags = var.tags
@@ -151,6 +156,7 @@ module "regional_eu_west_1" {
 
   enable_guardduty                = var.enable_guardduty
   restrict_default_security_group = var.restrict_default_security_group
+  analyzer_type                   = var.analyzer_type
   enable_ebs_default_encryption   = true
 
   tags = var.tags
@@ -175,6 +181,7 @@ module "regional_eu_west_2" {
 
   enable_guardduty                = var.enable_guardduty
   restrict_default_security_group = var.restrict_default_security_group
+  analyzer_type                   = var.analyzer_type
   enable_ebs_default_encryption   = true
 
   tags = var.tags
@@ -199,6 +206,7 @@ module "regional_eu_west_3" {
 
   enable_guardduty                = var.enable_guardduty
   restrict_default_security_group = var.restrict_default_security_group
+  analyzer_type                   = var.analyzer_type
   enable_ebs_default_encryption   = true
 
   tags = var.tags
@@ -223,6 +231,7 @@ module "regional_eu_central_1" {
 
   enable_guardduty                = var.enable_guardduty
   restrict_default_security_group = var.restrict_default_security_group
+  analyzer_type                   = var.analyzer_type
   enable_ebs_default_encryption   = true
 
   tags = var.tags
@@ -247,6 +256,7 @@ module "regional_eu_north_1" {
 
   enable_guardduty                = var.enable_guardduty
   restrict_default_security_group = var.restrict_default_security_group
+  analyzer_type                   = var.analyzer_type
   enable_ebs_default_encryption   = true
 
   tags = var.tags
@@ -271,6 +281,7 @@ module "regional_ap_south_1" {
 
   enable_guardduty                = var.enable_guardduty
   restrict_default_security_group = var.restrict_default_security_group
+  analyzer_type                   = var.analyzer_type
   enable_ebs_default_encryption   = true
 
   tags = var.tags
@@ -295,6 +306,7 @@ module "regional_ap_northeast_1" {
 
   enable_guardduty                = var.enable_guardduty
   restrict_default_security_group = var.restrict_default_security_group
+  analyzer_type                   = var.analyzer_type
   enable_ebs_default_encryption   = true
 
   tags = var.tags
@@ -319,6 +331,7 @@ module "regional_ap_northeast_2" {
 
   enable_guardduty                = var.enable_guardduty
   restrict_default_security_group = var.restrict_default_security_group
+  analyzer_type                   = var.analyzer_type
   enable_ebs_default_encryption   = true
 
   tags = var.tags
@@ -343,6 +356,7 @@ module "regional_ap_northeast_3" {
 
   enable_guardduty                = var.enable_guardduty
   restrict_default_security_group = var.restrict_default_security_group
+  analyzer_type                   = var.analyzer_type
   enable_ebs_default_encryption   = true
 
   tags = var.tags
@@ -367,6 +381,7 @@ module "regional_ap_southeast_1" {
 
   enable_guardduty                = var.enable_guardduty
   restrict_default_security_group = var.restrict_default_security_group
+  analyzer_type                   = var.analyzer_type
   enable_ebs_default_encryption   = true
 
   tags = var.tags
@@ -391,6 +406,7 @@ module "regional_ap_southeast_2" {
 
   enable_guardduty                = var.enable_guardduty
   restrict_default_security_group = var.restrict_default_security_group
+  analyzer_type                   = var.analyzer_type
   enable_ebs_default_encryption   = true
 
   tags = var.tags
@@ -415,6 +431,7 @@ module "regional_sa_east_1" {
 
   enable_guardduty                = var.enable_guardduty
   restrict_default_security_group = var.restrict_default_security_group
+  analyzer_type                   = var.analyzer_type
   enable_ebs_default_encryption   = true
 
   tags = var.tags

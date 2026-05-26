@@ -23,9 +23,19 @@ variable "config_log_bucket_name" {
 }
 
 variable "is_organization_trail" {
-  description = "When true the CloudTrail is an organization trail covering all member accounts."
+  description = "False = account-level trail (this deployment targets a member account, not the Org management account); true would require the management account."
   type        = bool
-  default     = true
+  default     = false
+}
+
+variable "analyzer_type" {
+  description = "IAM Access Analyzer scope. ACCOUNT for a member account; ORGANIZATION only if this is the Org management/delegated-admin account."
+  type        = string
+  default     = "ACCOUNT"
+  validation {
+    condition     = contains(["ACCOUNT", "ORGANIZATION"], var.analyzer_type)
+    error_message = "analyzer_type must be ACCOUNT or ORGANIZATION."
+  }
 }
 
 variable "s3_read_event_bucket_arns" {
