@@ -85,6 +85,15 @@ receives all global-service events; non-home **network**-change events (5.10–5
 covered by the periodic Prowler scan instead. 5.16 (Security Hub) is dropped — Prowler is the
 CIS scanner. See "Cost posture".
 
+**Opt-in to make Prowler PASS (`enable_cloudwatch_alarms = true`, default off):** turning the
+toggle on deploys the *real* CIS metric-filter alarms for **5.1–5.14** (`modules/cloudwatch-metric-alarms`),
+so Prowler scores them PASS. Because CloudTrail delivers one event stream to all destinations,
+the alarms are fed by a **dedicated, management-events-only second trail** (`*-monitoring`,
+`deliver_to_cloudwatch_logs = true`) rather than the primary all-bucket-data-events trail — this
+keeps CloudWatch Logs ingestion small. Requires `monitoring_trail_log_bucket_name`. Cost when on:
+~$1.50/mo (14 alarms) + a small second-copy management-event charge + minor Logs ingest ≈ **$2–3/mo**.
+The EventBridge→SNS rules stay on regardless as the always-free baseline.
+
 | ID | Title | Lvl | Owner | Implemented in |
 | --- | --- | --- | --- | --- |
 | 5.1 | Unauthorized API calls | L2 | Compensating | `modules/monitoring-events` (EventBridge→SNS) |
@@ -141,7 +150,7 @@ compliance for free **compensating controls**. What is deployed by default:
 | Security Hub **off** (`enable_security_hub=false`) | 5.16 | ~$1–5/mo | **Prowler** is the CIS scanner — same checks, on a schedule |
 | CloudTrail **SSE-S3** not CMK (`create_kms_key=false`) | 4.5 | $1/mo flat | Logs still encrypted at rest (AES256), versioned, TLS-only, public-access-blocked |
 | CloudTrail **no CW Logs** (`deliver_to_cloudwatch_logs=false`) | feeds 5.x | ingest $ | EventBridge reads the same events without paid log ingestion |
-| **EventBridge→SNS** not metric alarms | 5.1–5.15 | $1.50/mo flat | Free EventBridge rules notify SNS on the same events |
+| **EventBridge→SNS** not metric alarms | 5.1–5.15 | $1.50/mo flat | Free EventBridge rules notify SNS on the same events. **Opt-in:** `enable_cloudwatch_alarms=true` adds the real metric-filter alarms (5.1–5.14) via a management-events-only monitoring trail → Prowler PASS, ~$2–3/mo |
 
 **Always-on free guardrails (kept):** CloudTrail (4.1), Access Analyzer all regions (2.19),
 EBS default encryption all regions (6.1.1), default-SG lockdown (6.5), IAM password policy

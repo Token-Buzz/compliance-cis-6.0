@@ -112,3 +112,25 @@ variable "restrict_default_security_group" {
   type        = bool
   default     = true
 }
+
+# Opt-in: CIS §5 CloudWatch metric-filter alarms (5.1–5.14).
+# When true, a dedicated management-events-only CloudTrail trail is created that
+# delivers to CloudWatch Logs, plus ~14 metric filters + alarms reading that log
+# group. Costs ~$2–3/mo. Default false keeps the near-$0 posture; the
+# EventBridge→SNS rules in module.monitoring_events remain the always-on
+# compensating control regardless of this setting.
+variable "enable_cloudwatch_alarms" {
+  description = "Opt-in CIS §5 CloudWatch metric-filter alarms (5.1–5.14); adds a dedicated management-events-only CloudTrail delivering to CloudWatch Logs + ~14 alarms; costs ~$2–3/mo; default off keeps the near-$0 posture (EventBridge→SNS in monitoring-events remains the always-on compensating control)."
+  type        = bool
+  default     = false
+}
+
+# Globally-unique S3 bucket name for the management-events-only monitoring trail.
+# REQUIRED when enable_cloudwatch_alarms = true; unused (and may be null) otherwise.
+# Cross-variable validation is enforced via a check block in main.tf because
+# Terraform variable validation blocks cannot reference other variables.
+variable "monitoring_trail_log_bucket_name" {
+  description = "Globally-unique S3 bucket for the management-events-only monitoring trail. REQUIRED when enable_cloudwatch_alarms = true."
+  type        = string
+  default     = null
+}
