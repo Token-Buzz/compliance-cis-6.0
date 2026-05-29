@@ -92,6 +92,11 @@ Two workflows, split by whether they touch the cloud:
 - Variables: `TF_STATE_BUCKET` (the `state_bucket` output from `global/backend-bootstrap`),
   `TRAIL_LOG_BUCKET_NAME`, `CONFIG_LOG_BUCKET_NAME` (the two required root vars, passed as
   `TF_VAR_*`). State locking is S3-native (`use_lockfile`), so no lock-table variable is needed.
+- Optional Variables (CIS §5 alarms opt-in): `ENABLE_CLOUDWATCH_ALARMS` (`true`/`false`, default
+  off via a `|| 'false'` fallback in `terraform-deploy.yml`) and `MONITORING_TRAIL_LOG_BUCKET_NAME`
+  (globally-unique S3 bucket for the management-events-only monitoring trail; required when the
+  toggle is `true`). Setting both flips CIS 5.1–5.14 from FAIL → PASS at ~$2–3/mo; leaving them
+  unset keeps the near-$0 EventBridge→SNS posture.
 
 ## GitHub tooling
 

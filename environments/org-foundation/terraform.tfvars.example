@@ -20,6 +20,16 @@ s3_read_event_bucket_arns = [
   # "arn:aws:s3:::my-sensitive-bucket",
 ]
 
+# Opt-in: CIS §5 CloudWatch metric-filter alarms (5.1–5.14). When true, a
+# dedicated management-events-only CloudTrail trail is created that delivers to
+# CloudWatch Logs, plus ~14 metric filters + alarms (so Prowler scores 5.1–5.14
+# PASS). Costs ~$2–3/mo. monitoring_trail_log_bucket_name is REQUIRED when this
+# is true and must be globally unique (suffix with the account id, as above).
+# In CI these are supplied as repo Variables ENABLE_CLOUDWATCH_ALARMS and
+# MONITORING_TRAIL_LOG_BUCKET_NAME (see terraform-deploy.yml).
+enable_cloudwatch_alarms         = true
+monitoring_trail_log_bucket_name = "cis-org-cloudtrail-monitoring-logs-421219980711"
+
 # AWS Config and Security Hub are OFF by default to minimize cost. Their CIS
 # coverage is provided instead by compensating controls (scheduled Prowler scans
 # + Terraform drift detection), so the continuous-recording bill is avoided.
