@@ -1,6 +1,6 @@
 locals {
   # CIS AWS Foundations Benchmark v6.0 section 5: CloudWatch Logs metric filter
-  # definitions for checks 5.1–5.14. Filter patterns are the canonical CIS patterns.
+  # definitions for checks 5.1–5.15. Filter patterns are the canonical CIS patterns.
   filter_definitions = {
     unauthorized_api_calls = {
       description = "CIS 5.1 - Unauthorized API calls"
@@ -57,6 +57,10 @@ locals {
     vpc_changes = {
       description = "CIS 5.14 - VPC changes"
       pattern     = "{ ($.eventName = CreateVpc) || ($.eventName = DeleteVpc) || ($.eventName = ModifyVpcAttribute) || ($.eventName = AcceptVpcPeeringConnection) || ($.eventName = CreateVpcPeeringConnection) || ($.eventName = DeleteVpcPeeringConnection) || ($.eventName = RejectVpcPeeringConnection) || ($.eventName = AttachClassicLinkVpc) || ($.eventName = DetachClassicLinkVpc) || ($.eventName = DisableVpcClassicLink) || ($.eventName = EnableVpcClassicLink) }"
+    }
+    organizations_changes = {
+      description = "CIS 5.15 - AWS Organizations changes"
+      pattern     = "{ ($.eventSource = organizations.amazonaws.com) && (($.eventName = \"AcceptHandshake\") || ($.eventName = \"AttachPolicy\") || ($.eventName = \"CreateAccount\") || ($.eventName = \"CreateOrganizationalUnit\") || ($.eventName = \"CreatePolicy\") || ($.eventName = \"DeclineHandshake\") || ($.eventName = \"DeleteOrganization\") || ($.eventName = \"DeleteOrganizationalUnit\") || ($.eventName = \"DeletePolicy\") || ($.eventName = \"DetachPolicy\") || ($.eventName = \"DisablePolicyType\") || ($.eventName = \"EnablePolicyType\") || ($.eventName = \"InviteAccountToOrganization\") || ($.eventName = \"LeaveOrganization\") || ($.eventName = \"MoveAccount\") || ($.eventName = \"RemoveAccountFromOrganization\") || ($.eventName = \"UpdatePolicy\") || ($.eventName = \"UpdateOrganizationalUnit\")) }"
     }
   }
 

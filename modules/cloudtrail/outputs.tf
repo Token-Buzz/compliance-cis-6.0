@@ -21,3 +21,11 @@ output "s3_bucket_arn" {
 output "trail_arn" {
   value = aws_cloudtrail.this.arn
 }
+
+output "access_log_bucket_id" {
+  value = try(aws_s3_bucket.access_logs[0].id, null)
+}
+
+output "access_log_bucket_arn" {
+  value = try(aws_s3_bucket.access_logs[0].arn, null)
+}

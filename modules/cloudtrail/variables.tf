@@ -36,6 +36,16 @@ variable "s3_log_retention_days" {
   default = 365
 }
 
+variable "enable_access_logging" {
+  type    = bool
+  default = true
+}
+
+variable "access_log_bucket_name" {
+  type    = string
+  default = null
+}
+
 variable "s3_data_event_write_all_buckets" {
   type    = bool
   default = true
