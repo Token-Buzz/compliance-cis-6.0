@@ -101,32 +101,6 @@ variable "support_role_trusted_principal_arns" {
   default = []
 }
 
-# CIS 2.14 — attach policies to groups, not users. Each map key is the group
-# name; members are names of EXISTING users (managed outside Terraform).
-# Default {} creates zero resources (no-op).
-variable "iam_groups" {
-  type = map(object({
-    managed_policy_arns = optional(list(string), [])
-    members             = optional(list(string), [])
-  }))
-  default = {}
-}
-
-# Optional break-glass admin role scaffold. Fully gated and default-OFF, so it
-# creates nothing until enabled. attach_customer_admin uses a customer-managed
-# admin policy to retain emergency admin without tripping CIS 2.15 (which only
-# flags the AWS-managed AdministratorAccess policy).
-variable "break_glass_admin" {
-  type = object({
-    enabled                = optional(bool, false)
-    role_name              = optional(string, "BreakGlassAdmin")
-    trusted_principal_arns = optional(list(string), [])
-    require_mfa            = optional(bool, true)
-    attach_customer_admin  = optional(bool, true)
-  })
-  default = {}
-}
-
 variable "tags" {
   type    = map(string)
   default = {}
