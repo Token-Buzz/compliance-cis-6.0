@@ -260,7 +260,10 @@ resource "aws_s3_bucket_policy" "this" {
 resource "aws_s3_bucket" "access_logs" {
   count = var.enable_access_logging ? 1 : 0
 
-  bucket = coalesce(var.access_log_bucket_name, "${var.log_bucket_name}-access-logs")
+  # Derive the target name from the ACTUAL trail bucket name (aws_s3_bucket.this.id),
+  # not var.log_bucket_name — the latter is null for the auto-named primary trail
+  # bucket, which would produce the invalid name "-access-logs".
+  bucket = coalesce(var.access_log_bucket_name, "${aws_s3_bucket.this.id}-access-logs")
 
   tags = var.tags
 }
@@ -388,7 +391,10 @@ resource "aws_s3_bucket_logging" "this" {
   bucket = aws_s3_bucket.this.id
 
   target_bucket = aws_s3_bucket.access_logs[0].id
-  target_prefix = "${var.log_bucket_name}/"
+  # Derive the prefix from the ACTUAL trail bucket name, not var.log_bucket_name —
+  # the latter is null for the auto-named primary trail bucket, which would collapse
+  # to the bare "/" prefix. aws_s3_bucket.this.id always resolves to the real name.
+  target_prefix = "${aws_s3_bucket.this.id}/"
 
   depends_on = [aws_s3_bucket_policy.access_logs]
 }
