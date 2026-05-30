@@ -250,6 +250,149 @@ resource "aws_s3_bucket_policy" "this" {
   depends_on = [aws_s3_bucket_public_access_block.this]
 }
 
+# ── CIS 4.4: S3 server access logging on the CloudTrail bucket ──────────────
+#
+# A dedicated, hardened target bucket receives S3 server access logs for the
+# CloudTrail bucket. The target bucket itself is NOT a CloudTrail bucket, so it
+# is not in scope for CIS 4.4 and intentionally has no access logging of its
+# own (avoiding infinite recursion).
+
+resource "aws_s3_bucket" "access_logs" {
+  count = var.enable_access_logging ? 1 : 0
+
+  bucket = coalesce(var.access_log_bucket_name, "${var.log_bucket_name}-access-logs")
+
+  tags = var.tags
+}
+
+resource "aws_s3_bucket_versioning" "access_logs" {
+  count = var.enable_access_logging ? 1 : 0
+
+  bucket = aws_s3_bucket.access_logs[0].id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "access_logs" {
+  count = var.enable_access_logging ? 1 : 0
+
+  bucket = aws_s3_bucket.access_logs[0].id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      # AES256 (SSE-S3), not KMS: S3 server-access-log delivery to a
+      # KMS-encrypted target is unreliable, so a log-delivery target uses SSE-S3.
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "access_logs" {
+  count = var.enable_access_logging ? 1 : 0
+
+  bucket = aws_s3_bucket.access_logs[0].id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "access_logs" {
+  count = var.enable_access_logging ? 1 : 0
+
+  bucket = aws_s3_bucket.access_logs[0].id
+
+  rule {
+    id     = "expire-access-logs"
+    status = "Enabled"
+
+    filter {}
+
+    expiration {
+      days = var.s3_log_retention_days
+    }
+  }
+}
+
+resource "aws_s3_bucket_ownership_controls" "access_logs" {
+  count = var.enable_access_logging ? 1 : 0
+
+  bucket = aws_s3_bucket.access_logs[0].id
+
+  rule {
+    object_ownership = "BucketOwnerEnforced"
+  }
+}
+
+data "aws_iam_policy_document" "access_logs" {
+  count = var.enable_access_logging ? 1 : 0
+
+  statement {
+    sid       = "AllowS3ServerAccessLogsDelivery"
+    effect    = "Allow"
+    actions   = ["s3:PutObject"]
+    resources = ["${aws_s3_bucket.access_logs[0].arn}/*"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["logging.s3.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+      values   = [local.account_id]
+    }
+
+    condition {
+      test     = "ArnLike"
+      variable = "aws:SourceArn"
+      values   = [aws_s3_bucket.this.arn]
+    }
+  }
+
+  statement {
+    sid       = "DenyInsecureTransport"
+    effect    = "Deny"
+    actions   = ["s3:*"]
+    resources = [aws_s3_bucket.access_logs[0].arn, "${aws_s3_bucket.access_logs[0].arn}/*"]
+
+    principals {
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+
+    condition {
+      test     = "Bool"
+      variable = "aws:SecureTransport"
+      values   = ["false"]
+    }
+  }
+}
+
+resource "aws_s3_bucket_policy" "access_logs" {
+  count = var.enable_access_logging ? 1 : 0
+
+  bucket = aws_s3_bucket.access_logs[0].id
+  policy = data.aws_iam_policy_document.access_logs[0].json
+
+  depends_on = [aws_s3_bucket_public_access_block.access_logs]
+}
+
+resource "aws_s3_bucket_logging" "this" {
+  count = var.enable_access_logging ? 1 : 0
+
+  bucket = aws_s3_bucket.this.id
+
+  target_bucket = aws_s3_bucket.access_logs[0].id
+  target_prefix = "${var.log_bucket_name}/"
+
+  depends_on = [aws_s3_bucket_policy.access_logs]
+}
+
 resource "aws_cloudwatch_log_group" "this" {
   count = var.deliver_to_cloudwatch_logs ? 1 : 0
 

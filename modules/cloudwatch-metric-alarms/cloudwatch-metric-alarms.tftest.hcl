@@ -11,12 +11,12 @@ run "creates_full_cis_metric_filter_and_alarm_set" {
   }
 
   assert {
-    condition     = length(aws_cloudwatch_log_metric_filter.this) >= 14
-    error_message = "Expected the full CIS section 5 metric-filter set (>= 14 filters)."
+    condition     = length(aws_cloudwatch_log_metric_filter.this) >= 15
+    error_message = "Expected the full CIS section 5 metric-filter set (>= 15 filters, 5.1-5.15)."
   }
 
   assert {
-    condition     = length(aws_cloudwatch_metric_alarm.this) >= 14
-    error_message = "Expected the full CIS section 5 metric-alarm set (>= 14 alarms)."
+    condition     = length(aws_cloudwatch_metric_alarm.this) >= 15
+    error_message = "Expected the full CIS section 5 metric-alarm set (>= 15 alarms, 5.1-5.15)."
   }
 }
