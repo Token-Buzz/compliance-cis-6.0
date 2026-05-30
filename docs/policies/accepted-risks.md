@@ -12,6 +12,7 @@ the budget changes.
 | R-2 | 5.16 AWS Security Hub | L2 | Not deployed | No in-console aggregated CIS scorecard | **Prowler** runs the same CIS benchmark on a schedule and emits the JSON scorecard | `enable_security_hub = true` |
 | R-3 | 4.5 CloudTrail logs encrypted with KMS CMK | L2 | SSE-S3 (AES256) instead of a customer-managed key | Logs not encrypted with a customer-controlled, auditable, revocable key | Logs are still encrypted at rest (AES256), object-versioned, TLS-only, and public-access-blocked; trail has log-file validation | `create_kms_key = true` (+$1/mo) |
 | R-4 | 5.1–5.15 monitoring | L1/L2 | EventBridge→SNS instead of CloudWatch metric-filter alarms | Prowler will still flag 5.1–5.15 as FAIL (it checks for the metric filters); home-region rules do not catch **network**-change events (5.10–5.14) in other regions | Free **EventBridge** rules notify SNS on the same CloudTrail events in the home region (all global-service events); periodic **Prowler** scan covers all regions for the network controls | **`enable_cloudwatch_alarms = true`** — deploys the real metric-filter alarms (5.1–5.14) on a dedicated management-events-only trail → Prowler PASS (~$2–3/mo). Default off keeps this an accepted risk. |
+| R-5 | 2.15 OrganizationAccountAccessRole admin policy | L1 | Accepted — keep AWS-managed AdministratorAccess on the Organizations recovery role | The Organizations cross-account recovery role grants *:*; ANY admin policy on it (AWS- or customer-managed) trips a Prowler admin-privileges check, so the finding cannot be cleared without crippling break-glass recovery into the member account | Trust is limited to the management account root (172106476397) only — assume-only, no standing access keys; every assumption is CloudTrail-logged and MFA-gateable at the management-account identity; role used solely for break-glass admin | Replace with scoped customer-managed policies if member-account admin is fully delegated, or remove the role if Organizations access is restructured |
 
 ## What is NOT an accepted risk
 
@@ -20,6 +21,13 @@ log-file validation), IAM External Access Analyzer in all regions (2.19), EBS de
 encryption in all regions (6.1.1), default-security-group lockdown (6.5), IAM password policy
 (2.7/2.8), account + security contacts (2.1/2.2), AWS Support role (2.16), and account-level
 S3 Block Public Access (3.1.4).
+
+The **`GithubOIDCPolicy`** `*:*` finding (2.15 family,
+`iam_customer_attached_policy_no_administrative_privileges`) is being **REMEDIATED, not
+accepted** — it is replaced by the service-scoped **`GithubOIDCPolicyCISCompliance`** (see
+[`../../iam-policies/README.md`](../../iam-policies/README.md)). Likewise, the **`provisioner`**
+IAM user's AdministratorAccess is being **removed** (the user is deleted; admin is now obtained
+by assuming `OrganizationAccountAccessRole` from the management account).
 
 ## Manual / process controls
 
