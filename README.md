@@ -69,3 +69,9 @@ terraform plan -var-file=terraform.tfvars      # review with the user before any
 
 **Prowler v4** (CIS AWS Foundations) — a single read-only IAM-role run, CIS-native with
 per-check severity + remediation, emitting JSON reused by the continuous-monitoring scorecard.
+
+## Evidence
+
+This screenshot provides evidence of baseline hardening proven through a Prowler Compliance scan.
+<img width="2243" height="995" alt="image" src="https://github.com/user-attachments/assets/6896b400-c6a8-40ea-b752-2bba7461e71e" />
+
