@@ -134,3 +134,14 @@ variable "monitoring_trail_log_bucket_name" {
   type        = string
   default     = null
 }
+
+# Off by default for cost. CloudTrail S3 object-level WRITE data events across all
+# buckets are billed per event (~$0.00002/event) and dominate the CloudTrail bill.
+# Management events (always recorded by the primary trail) stay free. Turn this on
+# only while running a CIS/Prowler compliance scan that needs S3 data-event
+# coverage, then turn it back off.
+variable "enable_s3_data_events" {
+  description = "Record CloudTrail S3 object-level WRITE data events across all buckets. Billed per event; default off. Turn on only while running a compliance scan."
+  type        = bool
+  default     = false
+}
