@@ -27,7 +27,7 @@ module "cloudtrail" {
   create_kms_key             = false
   deliver_to_cloudwatch_logs = false
 
-  s3_data_event_write_all_buckets = true
+  s3_data_event_write_all_buckets = var.enable_s3_data_events
   s3_read_event_bucket_arns       = var.s3_read_event_bucket_arns
 
   tags = var.tags

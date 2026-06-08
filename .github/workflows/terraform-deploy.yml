@@ -40,6 +40,11 @@ env:
   # unique MONITORING_TRAIL_LOG_BUCKET_NAME.
   TF_VAR_enable_cloudwatch_alarms: ${{ vars.ENABLE_CLOUDWATCH_ALARMS || 'false' }}
   TF_VAR_monitoring_trail_log_bucket_name: ${{ vars.MONITORING_TRAIL_LOG_BUCKET_NAME }}
+  # CloudTrail S3 object-level data events are billed per event and dominate the
+  # CloudTrail bill. Default off (near-$0); set repo Variable ENABLE_S3_DATA_EVENTS=true
+  # only while running a compliance scan. The `|| 'false'` fallback keeps the bool
+  # parseable when the repo Variable is unset.
+  TF_VAR_enable_s3_data_events: ${{ vars.ENABLE_S3_DATA_EVENTS || 'false' }}
 
 jobs:
   plan:
