@@ -33,6 +33,10 @@ env:
   # Required root variables (no defaults). Non-secret; set as repo Variables.
   TF_VAR_trail_log_bucket_name: ${{ vars.TRAIL_LOG_BUCKET_NAME }}
   TF_VAR_config_log_bucket_name: ${{ vars.CONFIG_LOG_BUCKET_NAME }}
+  # Master on/off switch for ALL CloudTrail features (default off → near-$0). The
+  # `|| 'false'` fallback keeps the bool parseable when the repo Variable is unset.
+  # Set repo Variable ENABLE_CLOUDTRAIL=true to restore the CIS organization trail.
+  TF_VAR_enable_cloudtrail: ${{ vars.ENABLE_CLOUDTRAIL || 'false' }}
   # Opt-in CIS §5 CloudWatch metric-filter alarms (default off → near-$0).
   # The `|| 'false'` fallback keeps the bool parseable when the repo Variable is
   # unset (an empty TF_VAR would otherwise fail bool parsing). To turn the alarms

@@ -103,7 +103,8 @@ resource "aws_kms_alias" "this" {
 }
 
 resource "aws_s3_bucket" "this" {
-  bucket = var.log_bucket_name
+  bucket        = var.log_bucket_name
+  force_destroy = var.force_destroy
 
   tags = var.tags
 }
@@ -263,7 +264,8 @@ resource "aws_s3_bucket" "access_logs" {
   # Derive the target name from the ACTUAL trail bucket name (aws_s3_bucket.this.id),
   # not var.log_bucket_name — the latter is null for the auto-named primary trail
   # bucket, which would produce the invalid name "-access-logs".
-  bucket = coalesce(var.access_log_bucket_name, "${aws_s3_bucket.this.id}-access-logs")
+  bucket        = coalesce(var.access_log_bucket_name, "${aws_s3_bucket.this.id}-access-logs")
+  force_destroy = var.force_destroy
 
   tags = var.tags
 }

@@ -12,6 +12,12 @@
 trail_log_bucket_name  = "cis-org-cloudtrail-logs-421219980711"
 config_log_bucket_name = "cis-org-config-logs-421219980711"
 
+# Master ON/OFF switch for ALL CloudTrail features. false (default) = CloudTrail
+# disabled for near-$0 cost; applying with this false force-destroys the trail
+# buckets and purges their logs. Set true to (re)create the CIS organization trail.
+# In CI this is the repo Variable ENABLE_CLOUDTRAIL (see terraform-deploy.yml).
+enable_cloudtrail = false
+
 # Optional — email subscribed to the CIS alarm SNS topic.
 alarm_email = "security-alerts@example.com"
 
