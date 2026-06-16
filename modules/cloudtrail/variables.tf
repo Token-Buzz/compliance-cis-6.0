@@ -41,6 +41,12 @@ variable "enable_access_logging" {
   default = true
 }
 
+variable "force_destroy" {
+  description = "Allow Terraform to delete the trail log bucket (and access-log bucket) even when non-empty, permanently purging stored logs. Default false. Set true to enable tearing the trail down via `terraform destroy`/count=0."
+  type        = bool
+  default     = false
+}
+
 variable "access_log_bucket_name" {
   type    = string
   default = null

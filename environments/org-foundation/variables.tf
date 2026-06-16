@@ -145,3 +145,14 @@ variable "enable_s3_data_events" {
   type        = bool
   default     = false
 }
+
+# Master ON/OFF switch for ALL CloudTrail features. Default false keeps CloudTrail
+# OFF for near-$0 cost (no trail, no log buckets). Set true to restore the
+# CIS-compliant organization trail. NOTE: with this false, `terraform apply`
+# DESTROYS the primary trail and its S3 log/access-log buckets and — because the
+# env passes force_destroy = true — PERMANENTLY PURGES any logs they hold.
+variable "enable_cloudtrail" {
+  description = "Master on/off switch for ALL CloudTrail features (primary trail + its S3 buckets, and — with enable_cloudwatch_alarms — the monitoring trail). Default false = OFF for near-$0 cost. Turning it off and applying force-destroys the trail buckets, purging stored logs."
+  type        = bool
+  default     = false
+}
