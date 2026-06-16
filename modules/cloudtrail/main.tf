@@ -104,6 +104,8 @@ resource "aws_kms_alias" "this" {
 
 resource "aws_s3_bucket" "this" {
   bucket = var.log_bucket_name
+  # Disposable log bucket: allow teardown when CloudTrail is disabled.
+  force_destroy = true
 
   tags = var.tags
 }
@@ -264,6 +266,8 @@ resource "aws_s3_bucket" "access_logs" {
   # not var.log_bucket_name — the latter is null for the auto-named primary trail
   # bucket, which would produce the invalid name "-access-logs".
   bucket = coalesce(var.access_log_bucket_name, "${aws_s3_bucket.this.id}-access-logs")
+  # Disposable log bucket: allow teardown when CloudTrail is disabled.
+  force_destroy = true
 
   tags = var.tags
 }

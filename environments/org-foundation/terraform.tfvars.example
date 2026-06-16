@@ -30,6 +30,9 @@ s3_read_event_bucket_arns = [
 enable_cloudwatch_alarms         = true
 monitoring_trail_log_bucket_name = "cis-org-cloudtrail-monitoring-logs-421219980711"
 
+# Master CloudTrail switch. Off = no trail, no log buckets, no §5 alarms (cost ~$0).
+enable_cloudtrail = false
+
 # AWS Config and Security Hub are OFF by default to minimize cost. Their CIS
 # coverage is provided instead by compensating controls (scheduled Prowler scans
 # + Terraform drift detection), so the continuous-recording bill is avoided.

@@ -12,14 +12,15 @@ the budget changes.
 | R-2 | 5.16 AWS Security Hub | L2 | Not deployed | No in-console aggregated CIS scorecard | **Prowler** runs the same CIS benchmark on a schedule and emits the JSON scorecard | `enable_security_hub = true` |
 | R-3 | 4.5 CloudTrail logs encrypted with KMS CMK | L2 | SSE-S3 (AES256) instead of a customer-managed key | Logs not encrypted with a customer-controlled, auditable, revocable key | Logs are still encrypted at rest (AES256), object-versioned, TLS-only, and public-access-blocked; trail has log-file validation | `create_kms_key = true` (+$1/mo) |
 | R-4 | 5.1–5.15 monitoring | L1/L2 | EventBridge→SNS instead of CloudWatch metric-filter alarms | Prowler will still flag 5.1–5.15 as FAIL (it checks for the metric filters); home-region rules do not catch **network**-change events (5.10–5.14) in other regions | Free **EventBridge** rules notify SNS on the same CloudTrail events in the home region (all global-service events); periodic **Prowler** scan covers all regions for the network controls | **`enable_cloudwatch_alarms = true`** — deploys the real metric-filter alarms (5.1–5.14) on a dedicated management-events-only trail → Prowler PASS (~$2–3/mo). Default off keeps this an accepted risk. |
+| R-5 | 3.1–3.x CloudTrail (trail enabled, multi-region, log-file validation) + dependent §5 monitoring trail/alarms | L1/L2 | CloudTrail **off by default** (`enable_cloudtrail = false`, accepted 2026-06-16) — primary trail, log + access-log S3 buckets, the optional §5 monitoring trail, and the §5 CloudWatch metric-filter alarms are not deployed | No CloudTrail audit log of management/API activity; Prowler flags 3.1–3.x (and the §5 metric-filter checks that depend on the trail) as FAIL. Cost directive: no CloudTrail logs needed at this time; account is a non-prod / low-risk member account | Scheduled **Prowler** scans read live account config across all regions/checks; **`terraform plan`** in CI flags guardrail drift on every PR; the always-on free **EventBridge→SNS** security-event rules (`modules/monitoring-events`) stay on regardless and notify on the same security-relevant events | **`enable_cloudtrail = true`** — re-deploys the primary trail (free management events on a single trail), its buckets, and (with `enable_cloudwatch_alarms`) the §5 monitoring trail/alarms |
 
 ## What is NOT an accepted risk
 
-The free, high-value guardrails remain **fully enforced**: CloudTrail (4.1, multi-region,
-log-file validation), IAM External Access Analyzer in all regions (2.19), EBS default
-encryption in all regions (6.1.1), default-security-group lockdown (6.5), IAM password policy
-(2.7/2.8), account + security contacts (2.1/2.2), AWS Support role (2.16), and account-level
-S3 Block Public Access (3.1.4).
+The free, high-value guardrails remain **fully enforced**: IAM External Access Analyzer in
+all regions (2.19), EBS default encryption in all regions (6.1.1), default-security-group
+lockdown (6.5), IAM password policy (2.7/2.8), account + security contacts (2.1/2.2), AWS
+Support role (2.16), and account-level S3 Block Public Access (3.1.4). (CloudTrail — 4.1,
+multi-region, log-file validation — *was* in this set but is now an accepted risk; see R-5.)
 
 ## Manual / process controls
 

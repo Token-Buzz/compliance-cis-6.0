@@ -37,13 +37,18 @@ Out of scope: OS/host CIS baselines (the stack is serverless — no long-lived h
 ## Terraform enforcement
 
 This repo enforces the **account/org-wide** CIS guardrails. To stay under a **< $1/month**
-budget, the default deployment keeps the **free** controls (CloudTrail, IAM Access Analyzer,
+budget, the default deployment keeps the **free** controls (IAM Access Analyzer,
 EBS default encryption, default-SG lockdown, IAM password policy / contacts / support role,
 account S3 Block Public Access) and swaps the paid ones for **compensating controls**: AWS
 Config and Security Hub are **off by default** (covered by the scheduled Prowler scan +
-`terraform plan` drift), CloudTrail uses free **SSE-S3** (not a KMS CMK), and the CIS 5.x
-monitoring uses free **EventBridge → SNS** rules instead of paid CloudWatch alarms. Each can
-be re-enabled with its toggle. See [`docs/policies/accepted-risks.md`](docs/policies/accepted-risks.md)
+`terraform plan` drift). **CloudTrail is toggle-gated via `enable_cloudtrail` and currently
+OFF by default** (per an explicit cost directive — no CloudTrail logs needed at this time),
+which disables the primary trail, its log + access-log buckets, the optional §5 monitoring
+trail, and the §5 CloudWatch alarms; it is covered by the scheduled Prowler scan +
+`terraform plan` drift + the always-on **EventBridge → SNS** security-event rules. When
+CloudTrail is enabled, it uses free **SSE-S3** (not a KMS CMK), and the CIS 5.x monitoring
+uses free **EventBridge → SNS** rules instead of paid CloudWatch alarms. Each can be
+re-enabled with its toggle. See [`docs/policies/accepted-risks.md`](docs/policies/accepted-risks.md)
 and the "Cost posture" section of `controls-matrix.md`.
 
 **Resource-scoped** controls (per-bucket S3 settings, CloudFront TLS, DynamoDB encryption)

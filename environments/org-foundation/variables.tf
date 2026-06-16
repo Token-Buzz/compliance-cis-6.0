@@ -145,3 +145,19 @@ variable "enable_s3_data_events" {
   type        = bool
   default     = false
 }
+
+# Master on/off switch for ALL CloudTrail features in this root: the primary
+# organization/account trail, its log + access-log S3 buckets, the optional
+# §5 monitoring trail, and the §5 CloudWatch metric-filter alarms. Default OFF
+# per an explicit cost directive (no CloudTrail logs needed at this time).
+#
+# TRADE-OFF: CloudTrail is a *free* CIS control (management events on a single
+# trail cost nothing). Disabling it fails CIS 3.x (CloudTrail enabled / multi-
+# region / log-file validation) and removes the data source the §5 monitoring
+# relies on. Re-enable by setting this true. The always-on, free EventBridge→SNS
+# rules in module.monitoring_events are unaffected by this toggle.
+variable "enable_cloudtrail" {
+  description = "Master on/off switch for all CloudTrail features (primary trail, log/access-log buckets, §5 monitoring trail, §5 CloudWatch alarms). Default off per cost directive; disabling fails CIS 3.x. EventBridge→SNS rules remain regardless."
+  type        = bool
+  default     = false
+}

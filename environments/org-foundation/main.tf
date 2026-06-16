@@ -17,6 +17,7 @@ module "iam_baseline" {
 
 module "cloudtrail" {
   source = "../../modules/cloudtrail"
+  count  = var.enable_cloudtrail ? 1 : 0
 
   trail_name            = var.trail_name
   log_bucket_name       = var.trail_log_bucket_name
@@ -67,7 +68,7 @@ check "monitoring_bucket_name_required" {
 
 module "cloudtrail_monitoring" {
   source = "../../modules/cloudtrail"
-  count  = var.enable_cloudwatch_alarms ? 1 : 0
+  count  = var.enable_cloudtrail && var.enable_cloudwatch_alarms ? 1 : 0
 
   trail_name            = "${var.trail_name}-monitoring"
   log_bucket_name       = var.monitoring_trail_log_bucket_name
@@ -86,7 +87,7 @@ module "cloudtrail_monitoring" {
 
 module "cloudwatch_metric_alarms" {
   source = "../../modules/cloudwatch-metric-alarms"
-  count  = var.enable_cloudwatch_alarms ? 1 : 0
+  count  = var.enable_cloudtrail && var.enable_cloudwatch_alarms ? 1 : 0
 
   log_group_name = module.cloudtrail_monitoring[0].cloudwatch_log_group_name
   sns_topic_arn  = module.monitoring_events.sns_topic_arn

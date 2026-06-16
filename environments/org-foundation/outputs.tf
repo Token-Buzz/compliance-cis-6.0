@@ -1,11 +1,11 @@
 output "trail_arn" {
   description = "ARN of the organization CloudTrail."
-  value       = module.cloudtrail.trail_arn
+  value       = try(module.cloudtrail[0].trail_arn, null)
 }
 
 output "cloudtrail_kms_key_arn" {
   description = "KMS key ARN encrypting CloudTrail logs."
-  value       = module.cloudtrail.kms_key_arn
+  value       = try(module.cloudtrail[0].kms_key_arn, null)
 }
 
 output "security_events_sns_topic_arn" {

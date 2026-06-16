@@ -64,15 +64,15 @@ Live status for the M12 epic: [Token-Buzz/website#130](https://github.com/Token-
 
 | ID | Title | Lvl | Owner | Implemented in / note |
 | --- | --- | --- | --- | --- |
-| 4.1 | CloudTrail enabled in all regions | L1 | TF-account | `modules/cloudtrail` (multi-region org trail) |
-| 4.2 | CloudTrail log file validation | L2 | TF-account | `modules/cloudtrail` (`enable_log_file_validation`) |
+| 4.1 | CloudTrail enabled in all regions | L1 | **Accepted risk** | `modules/cloudtrail` (multi-region trail) — **gated by `enable_cloudtrail`, off by default** (cost). Prowler FAIL while off; see R-5 + "Cost posture" |
+| 4.2 | CloudTrail log file validation | L2 | **Accepted risk** | `modules/cloudtrail` (`enable_log_file_validation`) — **gated by `enable_cloudtrail`, off by default** (cost). See R-5 |
 | 4.3 | AWS Config enabled in all regions | L2 | **Compensating** | Config **not deployed** (cost). Covered by scheduled Prowler scan + `terraform plan` drift — see "Cost posture" |
 | 4.4 | Server access logging on CloudTrail S3 bucket | L1 | TF-account *(planned)* | Add access-log target to trail bucket — see "open facts" |
 | 4.5 | CloudTrail logs encrypted with KMS CMK | L2 | **Accepted risk** | `modules/cloudtrail` uses free **SSE-S3 (AES256)** by default — encrypted at rest, not a CMK. Set `create_kms_key=true` for strict 4.5 (+$1/mo) |
 | 4.6 | Rotation enabled for customer symmetric CMKs | L2 | Split | Our CMKs → `modules/cloudtrail` (rotation on); app CMKs → SST |
 | 4.7 | VPC flow logging in all VPCs | L2 | Split | `modules/vpc-baseline` (default VPC, opt-in/cost); app VPCs → SST |
-| 4.8 | S3 object-level **write** logging | L2 | TF-account | `modules/cloudtrail` (write data events, all buckets) |
-| 4.9 | S3 object-level **read** logging | L2 | TF-account | `modules/cloudtrail` (read data events, **scoped allowlist** for cost) |
+| 4.8 | S3 object-level **write** logging | L2 | TF-account | `modules/cloudtrail` (write data events, all buckets) — requires `enable_cloudtrail` (off by default) |
+| 4.9 | S3 object-level **read** logging | L2 | TF-account | `modules/cloudtrail` (read data events, **scoped allowlist** for cost) — requires `enable_cloudtrail` (off by default) |
 
 ## Section 5 — Monitoring
 
@@ -84,6 +84,10 @@ notified), not a checkbox pass. **Scope:** rules run in the home region (`us-eas
 receives all global-service events; non-home **network**-change events (5.10–5.14) are
 covered by the periodic Prowler scan instead. 5.16 (Security Hub) is dropped — Prowler is the
 CIS scanner. See "Cost posture".
+
+> **Depends on CloudTrail.** The §5 metric-filter alarms (opt-in below) read CloudTrail, so
+> they require `enable_cloudtrail = true` (off by default — see R-5). The free EventBridge→SNS
+> rules read AWS service events directly and stay on regardless of `enable_cloudtrail`.
 
 **Opt-in to make Prowler PASS (`enable_cloudwatch_alarms = true`, default off):** turning the
 toggle on deploys the *real* CIS metric-filter alarms for **5.1–5.14** (`modules/cloudwatch-metric-alarms`),
@@ -130,9 +134,9 @@ The EventBridge→SNS rules stay on regardless as the always-free baseline.
 
 | Owner | Count | Notes |
 | --- | ---: | --- |
-| TF-account, deployed (free) | ~13 | 2.1, 2.2, 2.7, 2.8, 2.16, 2.19, 3.1.4 (account), 4.1, 4.2, 4.8, 6.1.1, 6.5 |
+| TF-account, deployed (free) | ~11 | 2.1, 2.2, 2.7, 2.8, 2.16, 2.19, 3.1.4 (account), 6.1.1, 6.5 |
 | Compensating (Prowler / EventBridge) | ~17 | 4.3, 5.1–5.16 — paid AWS services swapped for free coverage |
-| Accepted risk (cost) | 1 | 4.5 (SSE-S3 not CMK) |
+| Accepted risk (cost) | ~3 | 4.5 (SSE-S3 not CMK); 4.1, 4.2 (CloudTrail off via `enable_cloudtrail`) |
 | TF-account, planned/off | ~4 | 2.21, 3.1.3, 4.4, 4.9 (allowlist), + GuardDuty/flow-logs toggles |
 | SST-app (`website`) | ~10 | several **N/A** if the app is fully serverless |
 | Manual / process | ~12 | tracked in `docs/policies/` + evidence |
@@ -146,18 +150,21 @@ compliance for free **compensating controls**. What is deployed by default:
 
 | Decision | Control(s) | Saves | Compensating control |
 | --- | --- | --- | --- |
+| CloudTrail **off** (`enable_cloudtrail=false`, default) | 4.1, 4.2, 4.8, 4.9, 5.x | CloudTrail S3 + data-event $ | Scheduled **Prowler** scan + `terraform plan` drift + always-on **EventBridge→SNS** security-event rules. Prowler FAIL on 3.x/§5 while off — see R-5 |
 | AWS Config **off** (`enable_aws_config=false`) | 4.3 | ~$5–40/mo | Scheduled **Prowler** scan (all regions, all checks) + `terraform plan` drift in CI |
 | Security Hub **off** (`enable_security_hub=false`) | 5.16 | ~$1–5/mo | **Prowler** is the CIS scanner — same checks, on a schedule |
 | CloudTrail **SSE-S3** not CMK (`create_kms_key=false`) | 4.5 | $1/mo flat | Logs still encrypted at rest (AES256), versioned, TLS-only, public-access-blocked |
 | CloudTrail **no CW Logs** (`deliver_to_cloudwatch_logs=false`) | feeds 5.x | ingest $ | EventBridge reads the same events without paid log ingestion |
 | **EventBridge→SNS** not metric alarms | 5.1–5.15 | $1.50/mo flat | Free EventBridge rules notify SNS on the same events. **Opt-in:** `enable_cloudwatch_alarms=true` adds the real metric-filter alarms (5.1–5.14) via a management-events-only monitoring trail → Prowler PASS, ~$2–3/mo |
 
-**Always-on free guardrails (kept):** CloudTrail (4.1), Access Analyzer all regions (2.19),
+**Always-on free guardrails (kept):** Access Analyzer all regions (2.19),
 EBS default encryption all regions (6.1.1), default-SG lockdown (6.5), IAM password policy
-(2.7/2.8), account contacts (2.1/2.2), support role (2.16), account S3 BPA (3.1.4).
-**Off by default (cost):** GuardDuty, VPC flow logs. Estimated run cost: **~$0.10–0.30/mo**
-(CloudTrail S3 storage + a few requests). Each dropped control can be turned back on with its
-toggle. Formal accepted-risk register: [`docs/policies/accepted-risks.md`](docs/policies/accepted-risks.md).
+(2.7/2.8), account contacts (2.1/2.2), support role (2.16), account S3 BPA (3.1.4), plus the
+free **EventBridge→SNS** security-event rules.
+**Off by default (cost):** CloudTrail (`enable_cloudtrail`, see R-5), GuardDuty, VPC flow logs.
+Estimated run cost: **~$0/mo** (CloudTrail off; only a few EventBridge/SNS requests). Each
+dropped control can be turned back on with its toggle. Formal accepted-risk register:
+[`docs/policies/accepted-risks.md`](docs/policies/accepted-risks.md).
 
 ## Open facts to confirm (these change ownership / applicability)
 
